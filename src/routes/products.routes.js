@@ -93,8 +93,7 @@ router.post('/', async (req, res) => {
             });
         }
 
-        const thumbnailsPaths = thumbnails ? thumbnails.map((thumbnail) => `./public/images/${thumbnail}`) : [];
-        const product = { title, description, code, price, stock, category, thumbnails: thumbnailsPaths };
+        const product = { title, description, code, price, stock, category, thumbnails };
 
         productsManagerFile.addProduct(product)
             .then((products) => {
