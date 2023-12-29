@@ -13,6 +13,13 @@ class ProductManagerMongo {
      */
     getProducts = async (limit, page, sort, category, availability, query) => {
 
+        if (page && (isNaN(page) || page <= 0)) {
+            return {
+                status: "error",
+                msg: "Page not found"
+            };
+        }
+
         const filter = {};
         if (category) {
             filter.category = category;

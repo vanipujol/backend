@@ -40,7 +40,6 @@ router.get('/products', async (req, res) => {
 
         // Render the products view with the obtained list
 
-        console.log(products)
         res.render('products',  {products});
     } catch (error) {
         console.error('Error fetching products:', error.message);

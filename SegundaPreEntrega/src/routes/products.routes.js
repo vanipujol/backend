@@ -4,7 +4,6 @@ import { ProductManagerMongo } from "../dao/mongoManagers/ProductMongoManager.js
 const router = Router();
 const productsManager = new ProductManagerMongo();
 
-
 /**
  * @route GET /products
  * @description Get a list of products based on query parameters.
@@ -20,7 +19,6 @@ router.get('/', async (req, res) => {
         const { limit, page, sort, category, availability, query} = req.query
 
         const products = await productsManager.getProducts(limit, page, sort, category, availability, query)
-
         res.send({
             status: "success",
             products: products
