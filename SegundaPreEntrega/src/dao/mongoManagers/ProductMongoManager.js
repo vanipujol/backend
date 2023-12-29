@@ -1,41 +1,86 @@
 import productsModel from "../models/products.model.js";
-
 class ProductManagerMongo {
+
     /**
-     * Retrieves all products from the database.
-     * @returns {Promise<Array>} A promise that resolves to an array of products.
+     * Retrieves a paginated list of products based on specified filters and options.
+     * @param {number} limit - The maximum number of products per page.
+     * @param {number} page - The page number to retrieve.
+     * @param {string} sort - The sorting order for products (either "asc" or "desc").
+     * @param {string} category - The category of products to filter.
+     * @param {boolean} availability - Filter products based on availability (true for available products).
+     * @param {string} query - The search query to filter products by title.
+     * @returns {Promise<Object>} An object containing the paginated list of products and pagination links.
      */
-    getProducts = async (options) => {
-        const products = await productsModel.paginate(
-            {
-                //filter
-            },
-            {
-                options
-            }
-        );
+    getProducts = async (limit, page, sort, category, availability, query) => {
+
+        const filter = {};
+        if (category) {
+            filter.category = category;
+        }
+        if (availability) {
+            filter.stock = { $gt: 0 };
+        }
+
+        if (query) {
+            filter.$or = [
+                { title: { $regex: new RegExp(query, 'i') } },
+            ];
+        }
+
+        const options = {
+            limit: limit ?? 10,
+            page: page ?? 1,
+            sort: { price: sort === "asc" ? 1 : -1},
+            lean: true
+        }
+
+        const products = await productsModel.paginate(filter, options);
+
+        console.log(products)
+        const queryParams = {
+            limit,
+            page: products.hasPrevPage && products.prevPage,
+            sort,
+            category,
+            availability,
+            query
+        };
+
+        // Remove properties undefined of the link
+        Object.keys(queryParams).forEach(key => queryParams[key] === undefined && delete queryParams[key]);
+
+        const baseLink = '/products';
+
+        let prevLink = null
+        let nextLink = null
+        if (products.hasPrevPage) {
+            prevLink = `${baseLink}?${new URLSearchParams(queryParams).toString()}`;
+        }
+
+        if (products.hasNextPage) {
+            queryParams.page = products.nextPage;
+            nextLink = `${baseLink}?${new URLSearchParams(queryParams).toString()}`;
+        }
+
+        products.prevLink = prevLink
+        products.nextLink = nextLink
         return {
             status: "success",
             msg: products
         }
     };
 
-/*    getProducts = async (options) => {
 
-        const products = await productsModel.paginate(
-            {
-                //filter
-            },
-            {
-                options
-            }
-        );
-        return {
-            status: "success",
-            msg: products
-        }
+    /**
+     * Retrieves all products from the database.
+     * @returns {Promise<Array>} A promise that resolves to an array of products.
+     */
+    getProductsByHome = async () => {
+        const products = await productsModel.find().lean();
+        console.log(products);
+        return products;
+    };
 
-    }*/
 
     /**
      * Adds a new product to the database.
@@ -50,9 +95,9 @@ class ProductManagerMongo {
     };
 
     /**
-     * Retrieves a product by its ID.
-     * @param {string} id - The ID of the product to retrieve.
-     * @returns {Promise<Object>} A promise that resolves to the retrieved product.
+     * Retrieves a product by its ID from the database.
+     * @param {string} id - The ID of the product to be retrieved.
+     * @returns {Promise<Array>} Array containing the product matching the specified ID.
      */
     async getProductById(id) {
         return await productsModel.find({_id: id});

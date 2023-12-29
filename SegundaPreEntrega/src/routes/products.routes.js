@@ -4,24 +4,22 @@ import { ProductManagerMongo } from "../dao/mongoManagers/ProductMongoManager.js
 const router = Router();
 const productsManager = new ProductManagerMongo();
 
+
+/**
+ * @route GET /products
+ * @description Get a list of products based on query parameters.
+ * @param {number} req.query.limit - The maximum number of products to return.
+ * @param {number} req.query.page - The page number of the product list.
+ * @param {string} req.query.sort - The sorting criteria for the products.
+ * @param {string} req.query.category - The category of products to filter.
+ * @param {boolean} req.query.availability - Filter products based on availability.
+ * @param {string} req.query.query - Search query for products.
+ */
 router.get('/', async (req, res) => {
     try {
-        const { limit, page, sort, category, price} = req.query
-        const options = {
-            limit: limit ?? 10,
-            page: page ?? 1,
-            sort: { price: sort === "asc" ? 1 : -1},
-            lean: true
-        }
+        const { limit, page, sort, category, availability, query} = req.query
 
-        const products = await productsManager.getProducts(options)
-
-        if(products.hasPrevPage){
-            products.prevLink = "---LINK---"
-        }
-        if(products.hasNextPage){
-            products.nextLink = "---LINK---"
-        }
+        const products = await productsManager.getProducts(limit, page, sort, category, availability, query)
 
         res.send({
             status: "success",
@@ -67,66 +65,23 @@ router.get('/:pid', async (req, res) => {
 });
 
 /**
- * Handles requests to create a new product.
- * @param {Object} req.body - The body of the request containing product information.
- * @param {string} req.body.title - The title of the product.
- * @param {string} req.body.description - The description of the product.
- * @param {string} req.body.code - The code of the product.
- * @param {number} req.body.price - The price of the product.
- * @param {number} req.body.stock - The stock quantity of the product.
- * @param {string} req.body.category - The category of the product.
- * @param {Array<string>} req.body.thumbnails - An array of thumbnail URLs for the product.
+ * @route POST /products
+ * @description Add a new product.
+ * @param {Object} req.body - The new product data.
+ * @param {string} req.body.name - The name of the new product.
+ * @param {string} req.body.description - The description of the new product.
+ * @param {number} req.body.price - The price of the new product.
+ * @param {string} req.body.category - The category of the new product.
+ * @param {boolean} req.body.availability - The availability status of the new product.
  */
 router.post('/', async (req, res) => {
+    const newProduct = req.body;
+
     try {
-        const { title, description, code, price, stock, category, thumbnails } = req.body;
-
-        // Validation of input data types
-        if (
-            typeof title !== 'string' ||
-            typeof description !== 'string' ||
-            typeof code !== 'string' ||
-            typeof category !== 'string' ||
-            typeof price !== 'number' ||
-            typeof stock !== 'number'
-        ) {
-            return res.status(400).send({
-                status: 'error',
-                msg: 'Invalid data types for one or more fields',
-            });
-        }
-
-        // Validation of thumbnails data type
-        if (thumbnails && (!Array.isArray(thumbnails) || !thumbnails.every(thumbnail => typeof thumbnail === 'string'))) {
-            return res.status(400).send({
-                status: 'error',
-                msg: 'Invalid data type for thumbnails',
-            });
-        }
-
-        const product = { title, description, code, price, stock, category, thumbnails };
-
-        productsManager.addProduct(product)
-            .then((products) => {
-                res.status(201).send({
-                    status: 'success',
-                    msg: 'Product created',
-                    products,
-                });
-            })
-            .catch((error) => {
-                console.error(error);
-                res.status(500).send({
-                    status: 'error',
-                    msg: 'Internal server error',
-                });
-            });
+        const createdProduct = await productsManager.addProduct(newProduct);
+        res.json(createdProduct);
     } catch (error) {
-        console.error(error);
-        res.status(500).send({
-            status: 'error',
-            msg: 'Internal server error',
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
