@@ -1,35 +1,51 @@
 import express from "express";
+import session from "express-session";
 import { cartRouter } from "./routes/carts.routes.js";
 import { productRouter } from "./routes/products.routes.js";
 import {engine} from "express-handlebars";
-import viewRouter from "./routes/views.route.js";
-import __dirname from "./utils.js";
 import {Server} from "socket.io";
-import {ProductManagerMongo} from "./dao/mongoManagers/ProductMongoManager.js";
-import mongoose from "mongoose";
+import MongoStore from "connect-mongo";
 import {ChatMongoManager} from "./dao/mongoManagers/ChatMongoManager.js";
+import passport from "passport";
 
-const PORT = 8080;
+import viewRouter from "./routes/views.router.js";
+import __dirname, {emailSender} from "./utils.js";
+import sessionRouter from "./routes/sessions.routes.js";
+import initializePassport from "./config/passport.config.js";
+import {options} from "./config/config.js";
+import mongoose from "mongoose";
+
+const PORT = options.PORT;
 const app = express();
-const MONGO = "mongodb+srv://vanipujol:1438@cluster0.5l6lb6u.mongodb.net/ecommerce"
+const MONGO = options.MONGO_URL;
 const connection = mongoose.connect(MONGO);
-const httpServer = app.listen(PORT, () => {
-    console.log(`Servidor funcionando en el puerto: http://localhost:${PORT}`);
-});
-
-const productManager = new ProductManagerMongo()
+const httpServer = app.listen(PORT, () => console.log(`Servidor funcionando en el puerto: ${PORT}`));
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(express.static(__dirname + "/public"));
+
+initializePassport()
+app.use(session({
+    store: new MongoStore({
+        mongoUrl: MONGO,
+        ttl:3600
+    }),
+    secret:"CoderSecret",
+    resave:false,
+    saveUninitialized:false
+}))
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 app.set("views", __dirname + "/views");
 
-app.use(express.static(__dirname + "/public"));
-
 app.use("/", viewRouter);
-
+app.use('/api/sessions', sessionRouter);
 app.use("/api/products", productRouter);
 app.use("/api/carts", cartRouter);
 
