@@ -3,6 +3,7 @@ import { dirname } from "path";
 import multer from "multer";
 import bcrypt from "bcrypt";
 import {transport} from "./config/gmail.js";
+import {ticketService} from "./repository/index.repository.js";
 
 export const createHash = (password) => bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 export const validatePassword = (password, user) => bcrypt.compareSync(password, user.password);
@@ -24,11 +25,19 @@ export const uploader = multer({storage});
 
 export const emailSender = async (UserEmail) => {
     try {
+
+        const ticket = await ticketService.getTicket(UserEmail);
+
+        const {code,purchase_datetime,amount,purchaser} = ticket;
         let emailTemplate = `<div>
-<h1>Gracias por tu compra!!</h1>
-<img src="https://fs-prod-cdn.nintendo-europe.com/media/images/10_share_images/portals_3/2x1_SuperMarioHub.jpg" style="width:250px"/>
-<p>Esperamos verte de nuevo</p>
-<a href="https://localhost:8080">Visitar</a>
+            <h1>Gracias por tu compra!!</h1>
+            <p>Código: ${code}</p>
+            <p>Fecha de compra: ${purchase_datetime}</p>
+            <p>Monto: ${amount}</p>
+            <p>Comprador: ${purchaser}</p>
+            <img src="https://fs-prod-cdn.nintendo-europe.com/media/images/10_share_images/portals_3/2x1_SuperMarioHub.jpg" style="width:250px"/>
+            <p>Esperamos verte de nuevo</p>
+            <a href="https://localhost:8080">Visitar</a>
 </div>`;
 
         const content = await transport.sendMail({

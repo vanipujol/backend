@@ -173,9 +173,6 @@ class CartController {
 
             const result = await ticketService.createTicket(cartId);
 
-            const ticket = await ticketService.getTicket(req.session.user.email);
-
-            const {code,purchase_datetime,amount,purchaser} = ticket;
 
             await emailSender(req.session.user.email);
 

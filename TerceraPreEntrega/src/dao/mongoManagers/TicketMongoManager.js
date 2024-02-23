@@ -16,7 +16,8 @@ export class TicketManagerMongo {
                 return "Ticket no encontrado";
             }
 
-            ticket["purchase_datetime"] = ticket["purchase_datetime"].replace(/ /g, "_");
+            console.log("......", ticket.purchase_datetime)
+            ticket.purchase_datetime = ticket.purchase_datetime.split(' ');
 
             return ticket;
 
