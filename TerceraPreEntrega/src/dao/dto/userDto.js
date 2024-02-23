@@ -5,6 +5,5 @@ export class GetUserDTO{
         this.age = `${user.age}`;
         this.role = `${user.role}`;
         this.cart = `${user.cart._id}`;
-        this.products = `${user.cart.products}`;
     }
 }
